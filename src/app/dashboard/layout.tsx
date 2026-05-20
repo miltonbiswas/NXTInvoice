@@ -1,64 +1,29 @@
-import type { ReactNode } from "react";
-
-import { redirect } from "next/navigation";
-
-import { createClient } from "@/utils/supabase/server";
-
+import React from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-
-import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
-
 import MobileBottomBar from "@/components/dashboard/MobileBottomBar";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
-
-  const supabase =
-    await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-
-    redirect("/login");
-  }
-
   return (
+    <div className="flex h-screen w-full flex-col bg-[#f4f7fe] font-sans antialiased text-[#1b2559] lg:flex-row overflow-hidden">
+      
+      {/* SIDEBAR Component */}
+      <DashboardSidebar />
 
-    <div className="min-h-screen bg-[#f4f7ff]">
-
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-
-        <DashboardSidebar />
-
-      </div>
-
-      {/* Main Content */}
-      <div className="min-h-screen lg:pl-[290px]">
-
-        <DashboardNavbar />
-
-        <main className="px-4 pb-32 pt-24 sm:px-6 lg:px-8 lg:pb-10">
-
+      {/* MAIN VIEWPORT CONTAINER */}
+      <div className="flex flex-1 flex-col overflow-hidden pb-24 lg:pb-0">
+        
+        {/* VIEWPORT CONTENT HUB */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
-
         </main>
-
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden">
-
-        <MobileBottomBar />
-
-      </div>
-
+      {/* FLOATING MOBILE BAR */}
+      <MobileBottomBar />
     </div>
   );
 }

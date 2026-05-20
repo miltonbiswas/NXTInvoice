@@ -1,455 +1,615 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
-import dayjs from "dayjs";
-
-import Link from "next/link";
-
-import { ArrowLeft, Printer } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  Download,
+  FileText,
+  Printer,
+  User2,
+} from "lucide-react";
 
 import { createClient } from "@/utils/supabase/client";
 
-const supabase = createClient();
+type Invoice = {
+  id: string;
+
+  invoice_number: string;
+
+  issue_date: string;
+
+  due_date: string;
+
+  po_number: string;
+
+  client_name: string;
+
+  client_email: string;
+
+  client_phone: string;
+
+  billing_address: string;
+
+  subtotal: number;
+
+  total_tax: number;
+
+  total_discount: number;
+
+  grand_total: number;
+
+  notes: string;
+
+  currency: string;
+
+  status: string;
+};
+
+type InvoiceItem = {
+  id: string;
+
+  item_name: string;
+
+  description: string;
+
+  batch_number: string;
+
+  expiry_date: string;
+
+  quantity: number;
+
+  unit_price: number;
+
+  tax_rate: number;
+
+  discount_rate: number;
+
+  line_total: number;
+};
+
+type Business = {
+  business_name: string;
+
+  business_email: string;
+
+  phone_number: string;
+
+  gstin: string;
+
+  address: string;
+};
 
 export default function InvoiceViewPage() {
-
   const params = useParams();
 
-  const id = params.id as string;
+  const router = useRouter();
 
-  const [invoice, setInvoice] =
-    useState<any>(null);
-
-  const [items, setItems] =
-    useState<any[]>([]);
+  const supabase = createClient();
 
   const [loading, setLoading] =
     useState(true);
 
-  async function fetchInvoice() {
+  const [invoice, setInvoice] =
+    useState<Invoice | null>(null);
 
-    try {
+  const [items, setItems] = useState<
+    InvoiceItem[]
+  >([]);
 
-      setLoading(true);
-
-      const { data, error } =
-        await supabase
-          .from("invoices")
-          .select(`
-            *,
-            businesses (*),
-            clients (*)
-          `)
-          .eq("id", id)
-          .single();
-
-      if (error) {
-
-        console.error(error);
-
-        return;
-      }
-
-      setInvoice(data);
-
-      const { data: itemsData } =
-        await supabase
-          .from("invoice_items")
-          .select("*")
-          .eq("invoice_id", id);
-
-      setItems(itemsData || []);
-
-    } catch (error) {
-
-      console.error(error);
-
-    } finally {
-
-      setLoading(false);
-    }
-  }
+  const [business, setBusiness] =
+    useState<Business | null>(null);
 
   useEffect(() => {
-
-    fetchInvoice();
-
+    loadInvoice();
   }, []);
 
-  if (loading) {
+  async function loadInvoice() {
+    setLoading(true);
 
-    return (
+    const invoiceId = params.id;
 
-      <div className="rounded-[32px] border border-black/5 bg-white p-10 text-center shadow-sm">
+    const { data: invoiceData } =
+      await supabase
+        .from("invoices")
+        .select("*")
+        .eq("id", invoiceId)
+        .single();
 
-        Loading invoice...
+    if (!invoiceData) {
+      router.push("/dashboard/invoices");
 
-      </div>
-    );
+      return;
+    }
+
+    setInvoice(invoiceData);
+
+    const { data: businessData } =
+      await supabase
+        .from("businesses")
+        .select("*")
+        .eq(
+          "id",
+          invoiceData.business_id
+        )
+        .single();
+
+    setBusiness(businessData);
+
+    const { data: itemsData } =
+      await supabase
+        .from("invoice_items")
+        .select("*")
+        .eq("invoice_id", invoiceId);
+
+    setItems(itemsData || []);
+
+    setLoading(false);
   }
 
-  if (!invoice) {
+  function handlePrint() {
+    window.print();
+  }
 
+  if (loading) {
     return (
+      <div className="flex min-h-screen items-center justify-center bg-[#eef3ff]">
 
-      <div className="rounded-[32px] border border-black/5 bg-white p-10 text-center shadow-sm">
-
-        Invoice not found.
+        <p className="text-lg font-semibold text-gray-500">
+          Loading invoice...
+        </p>
 
       </div>
     );
   }
 
   return (
+    <div className="min-h-screen bg-[#eef3ff] print:bg-white">
 
-    <div className="space-y-8">
+      {/* TOPBAR */}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur-xl print:hidden">
 
-        <div className="flex items-center gap-4">
-
-          <Link
-            href="/dashboard/invoices"
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-black/10 bg-white"
-          >
-
-            <ArrowLeft size={18} />
-
-          </Link>
+        <div className="flex flex-col gap-4 px-4 py-5 xl:flex-row xl:items-center xl:justify-between">
 
           <div>
 
             <h1 className="text-3xl font-black text-[#0f172a]">
-
-              Invoice Preview
-
+              Invoice Details
             </h1>
 
-            <p className="mt-2 text-gray-500">
-
-              {invoice.invoice_number}
-
+            <p className="mt-1 text-gray-500">
+              View & print invoice
             </p>
 
           </div>
 
+          <div className="flex flex-wrap items-center gap-3">
+
+            <button
+              onClick={() =>
+                router.back()
+              }
+              className="flex h-12 items-center gap-2 rounded-2xl border border-black/10 bg-white px-5 font-semibold"
+            >
+              <ArrowLeft size={18} />
+              Back
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="flex h-12 items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 px-6 font-semibold text-white shadow-lg"
+            >
+              <Printer size={18} />
+              Print Invoice
+            </button>
+
+          </div>
+
         </div>
-
-        <button
-          onClick={() =>
-            window.print()
-          }
-          className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 px-6 font-semibold text-white"
-        >
-
-          <Printer size={18} />
-
-          Print Invoice
-
-        </button>
 
       </div>
 
-      <div className="mx-auto max-w-[900px] rounded-[32px] border border-black/5 bg-white p-10 shadow-sm">
+      {/* INVOICE */}
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mx-auto max-w-[1400px] px-4 py-5">
 
-          <div>
+        <div className="rounded-[36px] bg-white p-6 shadow-sm print:rounded-none print:shadow-none">
 
-            <h2 className="text-4xl font-black text-[#0f172a]">
+          {/* HEADER */}
 
-              {invoice.businesses?.business_name}
+          <div className="grid grid-cols-1 gap-8 border-b border-dashed border-black/10 pb-8 xl:grid-cols-2">
 
-            </h2>
+            {/* BUSINESS */}
 
-            <div className="mt-5 space-y-2 text-gray-500">
+            <div>
 
-              <p>
-                {invoice.businesses?.business_email}
-              </p>
+              <div className="mb-5 flex items-center gap-4">
 
-              <p>
-                {invoice.businesses?.phone_number}
-              </p>
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 text-white">
+
+                  <Building2 size={30} />
+
+                </div>
+
+                <div>
+
+                  <h2 className="text-3xl font-black text-[#0f172a]">
+                    {
+                      business?.business_name
+                    }
+                  </h2>
+
+                  <p className="text-gray-500">
+                    Invoice Generator
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="space-y-2 text-gray-600">
+
+                <p>
+                  {
+                    business?.business_email
+                  }
+                </p>
+
+                <p>
+                  {
+                    business?.phone_number
+                  }
+                </p>
+
+                <p>
+                  GSTIN:{" "}
+                  {business?.gstin}
+                </p>
+
+                <p>
+                  {business?.address}
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* INVOICE INFO */}
+
+            <div className="xl:text-right">
+
+              <h1 className="text-5xl font-black text-[#0f172a]">
+                INVOICE
+              </h1>
+
+              <div className="mt-6 space-y-2 text-gray-600">
+
+                <p>
+                  Invoice No:{" "}
+                  <span className="font-bold text-[#0f172a]">
+                    {
+                      invoice?.invoice_number
+                    }
+                  </span>
+                </p>
+
+                <p>
+                  Issue Date:{" "}
+                  {
+                    invoice?.issue_date
+                  }
+                </p>
+
+                <p>
+                  Due Date:{" "}
+                  {invoice?.due_date ||
+                    "-"}
+                </p>
+
+                <p>
+                  PO Number:{" "}
+                  {invoice?.po_number ||
+                    "-"}
+                </p>
+
+              </div>
 
             </div>
 
           </div>
 
-          <div className="text-left lg:text-right">
+          {/* CLIENT */}
 
-            <h1 className="text-5xl font-black text-blue-600">
+          <div className="mt-8 rounded-[28px] bg-[#f8faff] p-6">
 
-              INVOICE
+            <div className="mb-5 flex items-center gap-3">
 
-            </h1>
+              <User2
+                size={24}
+                className="text-blue-600"
+              />
 
-            <div className="mt-5 space-y-2 text-gray-500">
+              <h2 className="text-2xl font-black text-[#0f172a]">
+                Bill To
+              </h2>
 
-              <p>
+            </div>
 
-                <span className="font-bold text-black">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 
-                  Invoice No:
+              <div>
 
-                </span>{" "}
+                <p className="text-xs font-bold uppercase text-gray-500">
+                  Client Name
+                </p>
 
-                {invoice.invoice_number}
+                <p className="mt-2 font-semibold text-[#0f172a]">
+                  {invoice?.client_name ||
+                    "-"}
+                </p>
 
-              </p>
+              </div>
 
-              <p>
+              <div>
 
-                <span className="font-bold text-black">
+                <p className="text-xs font-bold uppercase text-gray-500">
+                  Email
+                </p>
 
-                  Issue Date:
+                <p className="mt-2 font-semibold text-[#0f172a]">
+                  {invoice?.client_email ||
+                    "-"}
+                </p>
 
-                </span>{" "}
+              </div>
 
-                {dayjs(invoice.issue_date).format("DD MMM YYYY")}
+              <div>
 
-              </p>
+                <p className="text-xs font-bold uppercase text-gray-500">
+                  Phone
+                </p>
 
-              <p>
+                <p className="mt-2 font-semibold text-[#0f172a]">
+                  {invoice?.client_phone ||
+                    "-"}
+                </p>
 
-                <span className="font-bold text-black">
+              </div>
 
-                  Due Date:
+              <div>
 
-                </span>{" "}
+                <p className="text-xs font-bold uppercase text-gray-500">
+                  Address
+                </p>
 
-                {dayjs(invoice.due_date).format("DD MMM YYYY")}
+                <p className="mt-2 font-semibold text-[#0f172a]">
+                  {invoice?.billing_address ||
+                    "-"}
+                </p>
 
-              </p>
+              </div>
 
             </div>
 
           </div>
 
-        </div>
+          {/* ITEMS */}
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-2">
+          <div className="mt-8 overflow-hidden rounded-[28px] border border-black/5">
 
-          <div className="rounded-[24px] bg-[#f8fafc] p-6">
+            <div className="overflow-x-auto">
 
-            <h3 className="text-lg font-black text-[#0f172a]">
+              <table className="w-full min-w-[950px]">
 
-              Bill To
+                <thead className="bg-[#f8faff]">
 
-            </h3>
+                  <tr>
 
-            <div className="mt-4 space-y-2 text-gray-600">
+                    {[
+                      "Item",
+                      "Batch",
+                      "Expiry",
+                      "Qty",
+                      "Price",
+                      "Tax %",
+                      "Discount %",
+                      "Total",
+                    ].map((title) => (
+                      <th
+                        key={title}
+                        className="px-5 py-5 text-left text-xs font-black uppercase tracking-wider text-gray-500"
+                      >
+                        {title}
+                      </th>
+                    ))}
 
-              <p className="font-bold text-black">
+                  </tr>
 
-                {invoice.clients?.client_name}
+                </thead>
 
-              </p>
+                <tbody>
 
-              <p>
-                {invoice.clients?.email}
-              </p>
+                  {items.map((item) => (
 
-              <p>
-                {invoice.clients?.phone}
-              </p>
+                    <tr
+                      key={item.id}
+                      className="border-t border-black/5"
+                    >
 
-              <p>
-                {invoice.clients?.billing_address}
-              </p>
+                      <td className="px-5 py-5">
+
+                        <div>
+
+                          <p className="font-black text-[#0f172a]">
+                            {
+                              item.item_name
+                            }
+                          </p>
+
+                          <p className="mt-1 text-sm text-gray-500">
+                            {
+                              item.description
+                            }
+                          </p>
+
+                        </div>
+
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {
+                          item.batch_number
+                        }
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {
+                          item.expiry_date
+                        }
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {item.quantity}
+                      </td>
+
+                      <td className="px-5 py-5">
+                        ₹
+                        {Number(
+                          item.unit_price
+                        ).toFixed(2)}
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {item.tax_rate}%
+                      </td>
+
+                      <td className="px-5 py-5">
+                        {
+                          item.discount_rate
+                        }
+                        %
+                      </td>
+
+                      <td className="px-5 py-5 font-black text-[#0f172a]">
+
+                        ₹
+                        {Number(
+                          item.line_total
+                        ).toFixed(2)}
+
+                      </td>
+
+                    </tr>
+
+                  ))}
+
+                </tbody>
+
+              </table>
 
             </div>
 
           </div>
 
-          <div className="rounded-[24px] bg-[#f8fafc] p-6">
+          {/* TOTALS */}
 
-            <h3 className="text-lg font-black text-[#0f172a]">
+          <div className="mt-8 flex justify-end">
 
-              Shipping Address
+            <div className="w-full rounded-[28px] bg-[#f8faff] p-6 xl:w-[450px]">
 
-            </h3>
+              <div className="space-y-5">
 
-            <div className="mt-4 text-gray-600">
+                <div className="flex justify-between">
 
-              {invoice.clients?.shipping_address || "N/A"}
+                  <span className="text-gray-500">
+                    Subtotal
+                  </span>
+
+                  <span className="font-black">
+                    ₹
+                    {Number(
+                      invoice?.subtotal
+                    ).toFixed(2)}
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between">
+
+                  <span className="text-gray-500">
+                    Tax
+                  </span>
+
+                  <span className="font-black">
+                    ₹
+                    {Number(
+                      invoice?.total_tax
+                    ).toFixed(2)}
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between">
+
+                  <span className="text-gray-500">
+                    Discount
+                  </span>
+
+                  <span className="font-black">
+                    ₹
+                    {Number(
+                      invoice?.total_discount
+                    ).toFixed(2)}
+                  </span>
+
+                </div>
+
+                <div className="border-t border-dashed border-black/10 pt-5">
+
+                  <div className="flex items-center justify-between">
+
+                    <span className="text-3xl font-black text-[#0f172a]">
+                      Grand Total
+                    </span>
+
+                    <span className="text-4xl font-black text-blue-600">
+
+                      ₹
+                      {Number(
+                        invoice?.grand_total
+                      ).toFixed(2)}
+
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
 
           </div>
 
-        </div>
+          {/* NOTES */}
 
-        <div className="mt-12 overflow-x-auto">
+          {invoice?.notes && (
+            <div className="mt-8 rounded-[28px] bg-[#f8faff] p-6">
 
-          <table className="w-full min-w-[900px] border-collapse">
+              <h2 className="text-2xl font-black text-[#0f172a]">
+                Notes
+              </h2>
 
-            <thead>
-
-              <tr className="border-b border-black/10 text-left">
-
-                <th className="py-4 font-bold">
-                  Item
-                </th>
-
-                <th className="py-4 font-bold">
-                  Batch
-                </th>
-
-                <th className="py-4 font-bold">
-                  Exp
-                </th>
-
-                <th className="py-4 font-bold">
-                  Qty
-                </th>
-
-                <th className="py-4 font-bold">
-                  Rate
-                </th>
-
-                <th className="py-4 font-bold">
-                  Tax %
-                </th>
-
-                <th className="py-4 font-bold">
-                  Discount %
-                </th>
-
-                <th className="py-4 font-bold text-right">
-                  Total
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {items.map((item) => (
-
-                <tr
-                  key={item.id}
-                  className="border-b border-black/5"
-                >
-
-                  <td className="py-5">
-                    {item.item_name}
-                  </td>
-
-                  <td className="py-5">
-                    {item.batch_number}
-                  </td>
-
-                  <td className="py-5">
-                    {item.expiry_date}
-                  </td>
-
-                  <td className="py-5">
-                    {item.quantity}
-                  </td>
-
-                  <td className="py-5">
-                    ₹ {item.unit_price}
-                  </td>
-
-                  <td className="py-5">
-                    {item.tax_rate}%
-                  </td>
-
-                  <td className="py-5">
-                    {item.discount_rate}%
-                  </td>
-
-                  <td className="py-5 text-right font-bold">
-
-                    ₹ {Number(item.total_amount).toFixed(2)}
-
-                  </td>
-
-                </tr>
-              ))}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-        <div className="mt-12 flex justify-end">
-
-          <div className="w-full max-w-[400px] space-y-4 rounded-[24px] bg-[#f8fafc] p-6">
-
-            <div className="flex items-center justify-between">
-
-              <span className="text-gray-500">
-
-                Subtotal
-
-              </span>
-
-              <span className="font-bold">
-
-                ₹ {Number(invoice.subtotal).toFixed(2)}
-
-              </span>
+              <p className="mt-4 whitespace-pre-wrap text-gray-600">
+                {invoice.notes}
+              </p>
 
             </div>
-
-            <div className="flex items-center justify-between">
-
-              <span className="text-gray-500">
-
-                Tax
-
-              </span>
-
-              <span className="font-bold">
-
-                ₹ {Number(invoice.total_tax).toFixed(2)}
-
-              </span>
-
-            </div>
-
-            <div className="flex items-center justify-between">
-
-              <span className="text-gray-500">
-
-                Discount
-
-              </span>
-
-              <span className="font-bold">
-
-                ₹ {Number(invoice.total_discount).toFixed(2)}
-
-              </span>
-
-            </div>
-
-            <div className="h-px bg-black/10" />
-
-            <div className="flex items-center justify-between">
-
-              <span className="text-xl font-black text-[#0f172a]">
-
-                Grand Total
-
-              </span>
-
-              <span className="text-3xl font-black text-blue-600">
-
-                ₹ {Number(invoice.grand_total).toFixed(2)}
-
-              </span>
-
-            </div>
-
-          </div>
+          )}
 
         </div>
 

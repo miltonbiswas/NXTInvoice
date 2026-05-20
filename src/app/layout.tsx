@@ -1,18 +1,9 @@
-import "./globals.css";
-
 import type { Metadata } from "next";
-import { Ubuntu } from "next/font/google";
-
-import ThemeProvider from "@/providers/ThemeProvider";
-
-const ubuntu = Ubuntu({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-});
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NXTInvoice®",
-  description: "Modern SaaS Invoicing Platform",
+  description: "Enterprise Billing Platform",
 };
 
 export default function RootLayout({
@@ -21,11 +12,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={ubuntu.className}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+    <html lang="en">
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );
