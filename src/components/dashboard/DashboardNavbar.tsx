@@ -2,97 +2,122 @@
 
 import { Bell } from "lucide-react";
 import { LogOut } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { useRouter }
-  from "next/navigation";
+from "next/navigation";
 
 import { createClient }
-  from "@/utils/supabase/client";
+from "@/utils/supabase/client";
 
 export default function DashboardNavbar() {
-const router = useRouter();
 
-const supabase = createClient();
+  const router = useRouter();
 
-async function handleLogout() {
+  const supabase = createClient();
 
-  await supabase.auth.signOut();
+  async function handleLogout() {
 
-  router.push("/login");
-}
+    await supabase.auth.signOut();
+
+    router.push("/login");
+  }
+
   return (
 
     <header
-  className="fixed left-0 right-0 top-0 z-40 flex h-20 items-center justify-between border-b border-black/5 bg-white/70 px-4 backdrop-blur-2xl lg:left-[290px] lg:px-8">
+      className="fixed left-0 right-0 top-0 z-40 flex h-20 items-center justify-between border-b border-black/5 bg-white/80 px-4 backdrop-blur-2xl lg:left-[290px] lg:px-8">
 
-      {/* Left */}
-      <div>
+      {/* LEFT SIDE */}
+      <div className="flex items-center gap-4">
 
-        <h1
-          className=" pl-16 text-2xl font-black text-[#0f172a] lg:pl-0">
-          Dashboard
-        </h1>
+        {/* Mobile Menu Button */}
+        <button
+          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-black/5 bg-white shadow-sm lg:hidden">
 
-        <p className="mt-1 text-sm text-gray-500">
+          <Menu size={20} />
 
-          Welcome back to your workspace
+        </button>
 
-        </p>
+        {/* Heading */}
+        <div>
+
+          <h1
+            className="text-2xl font-black text-[#0f172a]">
+
+            Dashboard
+
+          </h1>
+
+          <p
+            className="hidden text-sm text-gray-500 sm:block">
+
+            Welcome back to your workspace
+
+          </p>
+
+        </div>
 
       </div>
 
-      {/* Right */}
-      {/* Right */}
-<div className="flex items-center gap-3">
+      {/* RIGHT SIDE */}
+      <div className="flex items-center gap-3">
 
-  {/* Notifications */}
-  <button
-    className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-black/5 bg-white transition-all hover:shadow-lg sm:flex">
-    <Bell size={18} />
+        {/* Notification */}
+        <button
+          className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-black/5 bg-white transition-all hover:shadow-lg sm:flex">
 
-  </button>
+          <Bell size={18} />
 
-  {/* Profile */}
-  <div className=" hidden items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-2 sm:flex">
+        </button>
 
-    <div
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 text-sm font-bold text-white"  >   M
-    </div>
+        {/* Profile */}
+        <div
+          className="hidden items-center gap-3 rounded-2xl border border-black/5 bg-white px-4 py-2 shadow-sm md:flex">
 
-    <div>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 text-sm font-bold text-white">
 
-      <p className=" text-sm font-semibold text-[#0f172a]">
+            M
 
-        Milton Biswas
+          </div>
 
-      </p>
+          <div>
 
-      <p className="text-xs text-gray-500">
+            <p
+              className="text-sm font-semibold text-[#0f172a]">
 
-        Owner
+              Milton Biswas
 
-      </p>
+            </p>
 
-    </div>
+            <p
+              className="text-xs text-gray-500">
 
-  </div>
+              Owner
 
-  {/* Logout */}
-  <button
-    onClick={handleLogout}
-    className="flex h-12 items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 text-sm font-medium text-red-500 transition-all hover:bg-red-50">
+            </p>
 
-    <LogOut size={16} />
+          </div>
 
-    <span className="hidden sm:block">
+        </div>
 
-      Logout
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="flex h-12 items-center gap-2 rounded-2xl border border-red-100 bg-white px-4 text-sm font-medium text-red-500 transition-all hover:bg-red-50 hover:shadow-sm">
 
-    </span>
+          <LogOut size={16} />
 
-  </button>
+          <span className="hidden sm:block">
 
-</div>
+            Logout
+
+          </span>
+
+        </button>
+
+      </div>
 
     </header>
   );

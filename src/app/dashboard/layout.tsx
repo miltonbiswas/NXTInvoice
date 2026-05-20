@@ -23,54 +23,41 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // PROTECTED ROUTE
   if (!user) {
 
     redirect("/login");
   }
 
-  // CHECK BUSINESS SETUP
-  const { data: business } =
-    await supabase
-      .from("businesses")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-  // REDIRECT TO SETUP
-  if (!business) {
-
-    redirect("/setup");
-  }
-
   return (
 
-    <div className="min-h-screen bg-[#f6f8ff]">
+    <div className="min-h-screen bg-[#f4f7ff]">
 
-      {/* DESKTOP SIDEBAR */}
-      <DashboardSidebar />
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
 
-      {/* MAIN CONTENT */}
+        <DashboardSidebar />
+
+      </div>
+
+      {/* Main Content */}
       <div className="min-h-screen lg:pl-[290px]">
 
-        {/* TOP NAVBAR */}
         <DashboardNavbar />
 
-        {/* PAGE CONTENT */}
         <main className="px-4 pb-32 pt-24 sm:px-6 lg:px-8 lg:pb-10">
 
-          <div className="mx-auto w-full max-w-[1600px]">
-
-            {children}
-
-          </div>
+          {children}
 
         </main>
 
       </div>
 
-      {/* MOBILE NAVIGATION */}
-      <MobileBottomBar />
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden">
+
+        <MobileBottomBar />
+
+      </div>
 
     </div>
   );
