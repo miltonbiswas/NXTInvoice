@@ -1,551 +1,360 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import Link from "next/link";
+
+import dayjs from "dayjs";
+
 import {
-  BarChart3,
+  ArrowRight,
   CreditCard,
-  DollarSign,
   FileText,
-  TrendingUp,
+  IndianRupee,
   Users,
 } from "lucide-react";
 
+import { createClient } from "@/utils/supabase/client";
+
+const supabase = createClient();
+
+type DashboardStats = {
+  totalRevenue: number;
+  totalInvoices: number;
+  totalClients: number;
+  pendingInvoices: number;
+};
+
 export default function DashboardPage() {
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [stats, setStats] =
+    useState<DashboardStats>({
+      totalRevenue: 0,
+      totalInvoices: 0,
+      totalClients: 0,
+      pendingInvoices: 0,
+    });
+
+  const [recentInvoices, setRecentInvoices] =
+    useState<any[]>([]);
+
+  async function fetchDashboard() {
+
+    try {
+
+      setLoading(true);
+
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const {
+        data: invoices,
+      } = await supabase
+        .from("invoices")
+        .select(`
+          *,
+          clients (
+            client_name
+          )
+        `)
+        .eq("business_id", user.id);
+
+      const {
+        data: clients,
+      } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("business_id", user.id);
+
+      const totalRevenue =
+        invoices?.reduce(
+          (acc, invoice) =>
+            acc +
+            Number(
+              invoice.grand_total
+            ),
+          0
+        ) || 0;
+
+      const pendingInvoices =
+        invoices?.filter(
+          (invoice) =>
+            invoice.status !==
+            "paid"
+        ).length || 0;
+
+      setStats({
+        totalRevenue,
+        totalInvoices:
+          invoices?.length || 0,
+        totalClients:
+          clients?.length || 0,
+        pendingInvoices,
+      });
+
+      setRecentInvoices(
+        invoices
+          ?.sort(
+            (a, b) =>
+              new Date(
+                b.created_at
+              ).getTime() -
+              new Date(
+                a.created_at
+              ).getTime()
+          )
+          .slice(0, 5) || []
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+    } finally {
+
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+
+    fetchDashboard();
+
+  }, []);
+
+  const cards = [
+    {
+      title: "Total Revenue",
+      value: `₹ ${stats.totalRevenue.toFixed(2)}`,
+      icon: IndianRupee,
+      gradient:
+        "from-blue-600 via-violet-500 to-cyan-400",
+    },
+    {
+      title: "Invoices",
+      value: stats.totalInvoices,
+      icon: FileText,
+      gradient:
+        "from-violet-600 via-fuchsia-500 to-pink-400",
+    },
+    {
+      title: "Clients",
+      value: stats.totalClients,
+      icon: Users,
+      gradient:
+        "from-cyan-600 via-sky-500 to-blue-400",
+    },
+    {
+      title: "Pending",
+      value: stats.pendingInvoices,
+      icon: CreditCard,
+      gradient:
+        "from-orange-500 via-amber-500 to-yellow-400",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
 
-      {/* Hero Section */}
-      <section
-        className="
-          relative
-          overflow-hidden
-          rounded-[36px]
-          border
-          border-black/5
-          bg-white
-          p-6
-          shadow-sm
-          sm:p-8
-          lg:p-10
-        "
-      >
+    <div className="space-y-8">
 
-        {/* Background Glow */}
-        <div
-          className="
-            absolute
-            left-0
-            top-0
-            h-72
-            w-72
-            rounded-full
-            bg-blue-500/10
-            blur-3xl
-          "
-        />
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
-        <div
-          className="
-            absolute
-            bottom-0
-            right-0
-            h-72
-            w-72
-            rounded-full
-            bg-violet-500/10
-            blur-3xl
-          "
-        />
+        <div>
 
-        <div className="relative z-10">
+          <h1 className="text-4xl font-black tracking-tight text-[#0f172a]">
 
-          <div
-            className="
-              inline-flex
-              items-center
-              gap-2
-              rounded-full
-              border
-              border-black/10
-              bg-[#f8fafc]
-              px-4
-              py-2
-              text-sm
-              font-medium
-              text-gray-600
-            "
-          >
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            Enterprise Workspace Active
-          </div>
+            Dashboard
 
-          <h1
-            className="
-              mt-6
-              text-3xl
-              font-black
-              tracking-tight
-              text-[#0f172a]
-              sm:text-4xl
-              lg:text-5xl
-            "
-          >
-            Welcome to NXTInvoice®
           </h1>
 
-          <p
-            className="
-              mt-4
-              max-w-2xl
-              text-[15px]
-              leading-7
-              text-gray-500
-              sm:text-base
-            "
-          >
-            Your enterprise invoicing workspace is now successfully
-            configured. Manage invoices, clients, analytics,
-            reports, and business operations from a unified dashboard.
+          <p className="mt-3 text-gray-500">
+
+            Monitor invoices, revenue and business analytics.
+
           </p>
 
         </div>
-      </section>
 
-      {/* Stats Grid */}
-      <section
-        className="
-          grid
-          grid-cols-1
-          gap-5
-          sm:grid-cols-2
-          xl:grid-cols-4
-        "
-      >
-
-        {/* Revenue */}
-        <div
-          className="
-            rounded-[28px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
+        <Link
+          href="/dashboard/invoices/create"
+          className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-400 px-6 font-semibold text-white shadow-lg shadow-blue-500/20"
         >
-          <div className="flex items-center justify-between">
+
+          Create Invoice
+
+          <ArrowRight size={18} />
+
+        </Link>
+
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+
+        {cards.map((card, index) => {
+
+          const Icon = card.icon;
+
+          return (
 
             <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-blue-500/10
-              "
+              key={index}
+              className="overflow-hidden rounded-[32px] border border-black/5 bg-white shadow-sm"
             >
-              <DollarSign className="text-blue-600" size={26} />
-            </div>
 
-            <span
-              className="
-                rounded-full
-                bg-green-100
-                px-3
-                py-1
-                text-xs
-                font-semibold
-                text-green-700
-              "
-            >
-              +0%
-            </span>
+              <div className={`h-2 bg-gradient-to-r ${card.gradient}`} />
 
-          </div>
+              <div className="p-6">
 
-          <h3
-            className="
-              mt-6
-              text-sm
-              font-medium
-              text-gray-500
-            "
-          >
-            Total Revenue
-          </h3>
+                <div className="flex items-start justify-between">
 
-          <p
-            className="
-              mt-2
-              text-3xl
-              font-black
-              text-[#0f172a]
-            "
-          >
-            ₹0
-          </p>
-        </div>
+                  <div>
 
-        {/* Invoices */}
-        <div
-          className="
-            rounded-[28px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
-        >
-          <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-500">
 
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-violet-500/10
-              "
-            >
-              <FileText
-                className="text-violet-600"
-                size={24}
-              />
-            </div>
+                      {card.title}
 
-            <span
-              className="
-                rounded-full
-                bg-[#f8fafc]
-                px-3
-                py-1
-                text-xs
-                font-semibold
-                text-gray-500
-              "
-            >
-              Active
-            </span>
+                    </p>
 
-          </div>
+                    <h2 className="mt-4 text-4xl font-black tracking-tight text-[#0f172a]">
 
-          <h3
-            className="
-              mt-6
-              text-sm
-              font-medium
-              text-gray-500
-            "
-          >
-            Total Invoices
-          </h3>
+                      {loading
+                        ? "--"
+                        : card.value}
 
-          <p
-            className="
-              mt-2
-              text-3xl
-              font-black
-              text-[#0f172a]
-            "
-          >
-            0
-          </p>
-        </div>
+                    </h2>
 
-        {/* Clients */}
-        <div
-          className="
-            rounded-[28px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
-        >
-          <div className="flex items-center justify-between">
+                  </div>
 
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-cyan-500/10
-              "
-            >
-              <Users className="text-cyan-600" size={24} />
-            </div>
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r ${card.gradient}`}>
 
-            <span
-              className="
-                rounded-full
-                bg-[#f8fafc]
-                px-3
-                py-1
-                text-xs
-                font-semibold
-                text-gray-500
-              "
-            >
-              Connected
-            </span>
+                    <Icon
+                      size={24}
+                      className="text-white"
+                    />
 
-          </div>
+                  </div>
 
-          <h3
-            className="
-              mt-6
-              text-sm
-              font-medium
-              text-gray-500
-            "
-          >
-            Total Clients
-          </h3>
-
-          <p
-            className="
-              mt-2
-              text-3xl
-              font-black
-              text-[#0f172a]
-            "
-          >
-            0
-          </p>
-        </div>
-
-        {/* Payments */}
-        <div
-          className="
-            rounded-[28px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
-        >
-          <div className="flex items-center justify-between">
-
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                bg-emerald-500/10
-              "
-            >
-              <CreditCard
-                className="text-emerald-600"
-                size={24}
-              />
-            </div>
-
-            <span
-              className="
-                rounded-full
-                bg-[#f8fafc]
-                px-3
-                py-1
-                text-xs
-                font-semibold
-                text-gray-500
-              "
-            >
-              Secured
-            </span>
-
-          </div>
-
-          <h3
-            className="
-              mt-6
-              text-sm
-              font-medium
-              text-gray-500
-            "
-          >
-            Payments
-          </h3>
-
-          <p
-            className="
-              mt-2
-              text-3xl
-              font-black
-              text-[#0f172a]
-            "
-          >
-            ₹0
-          </p>
-        </div>
-
-      </section>
-
-      {/* Analytics + Activity */}
-      <section
-        className="
-          grid
-          grid-cols-1
-          gap-6
-          xl:grid-cols-3
-        "
-      >
-
-        {/* Analytics */}
-        <div
-          className="
-            xl:col-span-2
-            rounded-[32px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
-        >
-
-          <div className="flex items-center justify-between">
-
-            <div>
-              <h2
-                className="
-                  text-xl
-                  font-black
-                  text-[#0f172a]
-                "
-              >
-                Revenue Analytics
-              </h2>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Real-time business insights will appear here.
-              </p>
-            </div>
-
-            <div
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-2xl
-                bg-[#f8fafc]
-              "
-            >
-              <BarChart3
-                size={22}
-                className="text-gray-700"
-              />
-            </div>
-
-          </div>
-
-          {/* Empty State */}
-          <div
-            className="
-              mt-8
-              flex
-              h-[280px]
-              items-center
-              justify-center
-              rounded-[28px]
-              border
-              border-dashed
-              border-black/10
-              bg-[#f8fafc]
-            "
-          >
-            <div className="text-center">
-
-              <TrendingUp
-                size={42}
-                className="mx-auto text-gray-300"
-              />
-
-              <h3
-                className="
-                  mt-4
-                  text-lg
-                  font-bold
-                  text-gray-700
-                "
-              >
-                No analytics available yet
-              </h3>
-
-              <p className="mt-2 text-sm text-gray-500">
-                Analytics will automatically appear once
-                invoices and payments are created.
-              </p>
-
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div
-          className="
-            rounded-[32px]
-            border
-            border-black/5
-            bg-white
-            p-6
-            shadow-sm
-          "
-        >
-
-          <h2
-            className="
-              text-xl
-              font-black
-              text-[#0f172a]
-            "
-          >
-            Recent Activity
-          </h2>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Latest business operations and updates.
-          </p>
-
-          <div className="mt-8 space-y-4">
-
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="  flex  items-start  gap-4 rounded-2xl  border  border-black/5 bg-[#f8fafc]  p-4">
-
-                <div
-                  className="mt-1  h-3  w-3  rounded-full  bg-blue-500"/>
-
-                <div>
-                  <p className="  text-sm font-semibold text-[#0f172a]">
-                    Workspace initialized
-                  </p>
-
-                  <p className="mt-1 text-xs text-gray-500">
-                    Your dashboard environment is ready.
-                  </p>
                 </div>
 
               </div>
-            ))}
+
+            </div>
+          );
+        })}
+
+      </div>
+
+      <div className="rounded-[32px] border border-black/5 bg-white p-8 shadow-sm">
+
+        <div className="flex items-center justify-between">
+
+          <div>
+
+            <h2 className="text-2xl font-black text-[#0f172a]">
+
+              Recent Invoices
+
+            </h2>
+
+            <p className="mt-2 text-gray-500">
+
+              Latest generated invoices.
+
+            </p>
 
           </div>
+
+          <Link
+            href="/dashboard/invoices"
+            className="text-sm font-semibold text-blue-600"
+          >
+
+            View All
+
+          </Link>
+
         </div>
 
-      </section>
+        <div className="mt-8 space-y-5">
+
+          {recentInvoices.length === 0 ? (
+
+            <div className="rounded-[24px] border border-dashed border-black/10 p-12 text-center">
+
+              <h3 className="text-xl font-black text-[#0f172a]">
+
+                No invoices yet
+
+              </h3>
+
+              <p className="mt-3 text-gray-500">
+
+                Create your first invoice to start tracking analytics.
+
+              </p>
+
+            </div>
+
+          ) : (
+
+            recentInvoices.map((invoice) => (
+
+              <Link
+                key={invoice.id}
+                href={`/dashboard/invoices/${invoice.id}`}
+                className="block rounded-[28px] border border-black/5 bg-[#f8fafc] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+                  <div>
+
+                    <h3 className="text-xl font-black text-[#0f172a]">
+
+                      {invoice.invoice_number}
+
+                    </h3>
+
+                    <p className="mt-2 text-gray-500">
+
+                      {invoice.clients?.client_name}
+
+                    </p>
+
+                  </div>
+
+                  <div className="flex flex-col items-start gap-2 lg:items-end">
+
+                    <div className="text-2xl font-black text-blue-600">
+
+                      ₹ {Number(invoice.grand_total).toFixed(2)}
+
+                    </div>
+
+                    <div className="text-sm text-gray-400">
+
+                      {dayjs(invoice.issue_date).format("DD MMM YYYY")}
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </Link>
+            ))
+          )}
+
+        </div>
+
+      </div>
 
     </div>
   );

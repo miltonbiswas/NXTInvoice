@@ -1,21 +1,14 @@
-import type { ReactNode }
-from "react";
+import type { ReactNode } from "react";
 
-import { redirect }
-from "next/navigation";
+import { redirect } from "next/navigation";
 
-import {
-  createClient,
-} from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server";
 
-import DashboardSidebar
-from "@/components/dashboard/DashboardSidebar";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 
-import DashboardNavbar
-from "@/components/dashboard/DashboardNavbar";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 
-import MobileBottomBar
-from "@/components/dashboard/MobileBottomBar";
+import MobileBottomBar from "@/components/dashboard/MobileBottomBar";
 
 export default async function DashboardLayout({
   children,
@@ -30,37 +23,53 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // PROTECTED ROUTE
   if (!user) {
 
     redirect("/login");
   }
 
+  // CHECK BUSINESS SETUP
+  const { data: business } =
+    await supabase
+      .from("businesses")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+  // REDIRECT TO SETUP
+  if (!business) {
+
+    redirect("/setup");
+  }
+
   return (
 
-    <div
-      className="min-h-screen bg-[#f4f7ff]">
+    <div className="min-h-screen bg-[#f6f8ff]">
 
-      {/* Desktop Sidebar */}
+      {/* DESKTOP SIDEBAR */}
       <DashboardSidebar />
 
-      {/* Main */}
-      <div
-        className="lg:pl-[290px]">
+      {/* MAIN CONTENT */}
+      <div className="min-h-screen lg:pl-[290px]">
 
-        {/* Top Navbar */}
+        {/* TOP NAVBAR */}
         <DashboardNavbar />
 
-        {/* Main Content */}
-        <main
-          className="px-4 pb-32 pt-24 sm:px-6 lg:px-8lg:pb-8">
+        {/* PAGE CONTENT */}
+        <main className="px-4 pb-32 pt-24 sm:px-6 lg:px-8 lg:pb-10">
 
-          {children}
+          <div className="mx-auto w-full max-w-[1600px]">
+
+            {children}
+
+          </div>
 
         </main>
 
       </div>
 
-      {/* Mobile Bottom Bar */}
+      {/* MOBILE NAVIGATION */}
       <MobileBottomBar />
 
     </div>
