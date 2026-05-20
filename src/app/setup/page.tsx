@@ -31,67 +31,49 @@ export default function SetupPage() {
     useState("");
 
   async function handleSetup(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
+  e: React.FormEvent<HTMLFormElement>
+) {
+  e.preventDefault();
 
-    e.preventDefault();
+  setLoading(true);
 
-    setLoading(true);
+  const supabase = createClient();
 
-    // Get current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  // Get logged user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      return;
-    }
+  if (!user) {
+    setLoading(false);
+    return;
+  }
 
-    // Create organization
-    const { data: organization, error } =
-      await supabase
-        .from("organizations")
-        .insert({
-          owner_id: user.id,
+  // Save business
+  const { error } = await supabase
+    .from("businesses")
+    .upsert({
+      id: user.id,
+      business_name: businessName,
+      business_email: businessEmail,
+      phone_number: phone,
+      business_type: businessType,
+    });
 
-          business_name: businessName,
-
-          business_email: businessEmail,
-
-          phone,
-
-          business_type: businessType,
-        })
-        .select()
-        .single();
-
-    if (error || !organization) {
-
-      console.error(error);
-
-      setLoading(false);
-
-      return;
-    }
-
-    // Update profile
-    await supabase
-      .from("profiles")
-      .update({
-        onboarding_completed: true,
-
-        organization_id:
-          organization.id,
-
-        role: "owner",
-      })
-      .eq("id", user.id);
-
-    // Redirect dashboard
-    router.push("/dashboard");
+  if (error) {
+    console.error(error);
+    alert(error.message);
 
     setLoading(false);
+    return;
   }
+
+  router.push("/dashboard");
+
+  router.refresh();
+
+  setLoading(false);
+}
 
   return (
 
